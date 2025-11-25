@@ -29,6 +29,7 @@ class CategoryServicePersistenceTest {
     private String childId;
     private String grandChildId;
     private String newRootId;
+    private String nonExistentId;
 
     @BeforeEach
     void setup() {
@@ -143,5 +144,13 @@ class CategoryServicePersistenceTest {
 
         boolean existsUnderDifferentParent = repository.existsByUserAndParentAndNameNormalized(userId, newRootId, "lazer");
         assertThat(existsUnderDifferentParent).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should Return Null When Finding Path For Non Existent Id")
+    void shouldReturnNullWhenFindingPathForNonExistentId() {
+        String path = repository.findPathById(nonExistentId, userId);
+
+        assertThat(path).isNull();
     }
 }
