@@ -134,4 +134,14 @@ class CategoryServicePersistenceTest {
         String pathGrandChild = repository.findPathById(grandChildId, userId);
         assertThat(pathGrandChild).isEqualTo("Despesas/Entretenimento/Cinema");
     }
+
+    @Test
+    @DisplayName("Should Check Unique Name Per Parent")
+    void shouldCheckUniqueNamePerParent() {
+        boolean existsWithDifferentCase = repository.existsByUserAndParentAndNameNormalized(userId, rootId, "lazer");
+        assertThat(existsWithDifferentCase).isTrue();
+
+        boolean existsUnderDifferentParent = repository.existsByUserAndParentAndNameNormalized(userId, newRootId, "lazer");
+        assertThat(existsUnderDifferentParent).isFalse();
+    }
 }
