@@ -107,4 +107,14 @@ class CategoryServicePersistenceTest {
         boolean leafHasChildren = repository.hasChildren(grandChildId, userId);
         assertThat(leafHasChildren).isFalse();
     }
+
+    @Test
+    @DisplayName("Should List All Categories Ordered By Path")
+    void shouldListAllCategoriesOrderedByPath() {
+        var categories = repository.findAllByUserOrdered(userId);
+
+        assertThat(categories)
+                .extracting("path")
+                .containsExactly("Despesas", "Despesas/Lazer", "Despesas/Lazer/Cinema", "Receitas");
+    }
 }
