@@ -87,4 +87,14 @@ class CategoryServicePersistenceTest {
         String pathGrandChild = repository.findPathById(grandChildId, userId);
         assertThat(pathGrandChild).isEqualTo("Receitas/Lazer/Cinema");
     }
+
+    @Test
+    @DisplayName("Should Return True For Exists By User And Path When Path Exists")
+    void shouldReturnTrueForExistsByUserAndPathWhenPathExists() {
+        String existingPath = "Despesas/Lazer";
+
+        boolean exists = repository.existsByUserAndPath(userId, existingPath);
+
+        assertThat(exists).isTrue();
+    }
 }
