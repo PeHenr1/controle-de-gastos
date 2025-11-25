@@ -71,4 +71,20 @@ class CategoryServicePersistenceTest {
         String pathGrandChild = repository.findPathById(grandChildId, userId);
         assertThat(pathGrandChild).isEqualTo("Gastos/Lazer/Cinema");
     }
+
+    @Test
+    @DisplayName("Should Move Subtree And Cascade Update Paths")
+    void shouldMoveSubtreeAndCascadeUpdatePaths() {
+        String oldPath = "Despesas/Lazer";
+        String newPath = "Receitas/Lazer";
+
+        repository.move(childId, userId, newRootId, newPath);
+        repository.updatePathPrefix(userId, oldPath + "/", newPath + "/");
+
+        String pathChild = repository.findPathById(childId, userId);
+        assertThat(pathChild).isEqualTo(newPath);
+
+        String pathGrandChild = repository.findPathById(grandChildId, userId);
+        assertThat(pathGrandChild).isEqualTo("Receitas/Lazer/Cinema");
+    }
 }
