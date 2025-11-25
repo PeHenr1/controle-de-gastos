@@ -1,0 +1,74 @@
+package br.ifsp.demo.persistence;
+
+import br.ifsp.demo.domain.model.Category;
+import br.ifsp.demo.domain.port.CategoryRepositoryPort;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.*;
+
+@SpringBootTest
+@Transactional
+@Tag("PersistenceTest")
+@Tag("IntegrationTest")
+class CategoryServicePersistenceTest {
+
+    @Autowired
+    private CategoryRepositoryPort repository;
+
+    private String userId;
+
+    private String rootId;
+    private String childId;
+    private String grandChildId;
+    private String newRootId;
+
+    @BeforeEach
+    void setup() {
+        userId = UUID.randomUUID().toString();
+
+        Category rootCat = Category.root(userId, "Despesas");
+        rootId = repository.save(rootCat).id();
+
+        Category childCat = Category.child(userId, "Lazer", rootId);
+        childId = repository.save(childCat).id();
+
+        Category grandChildCat = Category.child(userId, "Cinema", childId);
+        grandChildId = repository.save(grandChildCat).id();
+
+        String rootPath = repository.findPathById(rootId, userId);
+        String childNewPath = rootPath + "/" + childCat.name();
+        repository.rename(childId, userId, childCat.name(), childNewPath);
+
+        String childPath = repository.findPathById(childId, userId);
+        String grandChildNewPath = childPath + "/" + grandChildCat.name();
+        repository.rename(grandChildId, userId, grandChildCat.name(), grandChildNewPath);
+    }
+
+    @Test
+    @DisplayName("Should Rename Root And Cascade Update Paths")
+    void shouldRenameRootAndCascadeUpdatePaths() {
+        String prefixoAntigo = "Despesas";
+        String novoNome = "Gastos";
+        String prefixoNovo = "Gastos";
+
+        repository.rename(rootId, userId, novoNome, prefixoNovo);
+        repository.updatePathPrefix(userId, prefixoAntigo + "/", prefixoNovo + "/");
+
+        String pathRoot = repository.findPathById(rootId, userId);
+        assertThat(pathRoot).isEqualTo(prefixoNovo);
+
+        String pathChild = repository.findPathById(childId, userId);
+        assertThat(pathChild).isEqualTo("Gastos/Lazer");
+
+        String pathGrandChild = repository.findPathById(grandChildId, userId);
+        assertThat(pathGrandChild).isEqualTo("Gastos/Lazer/Cinema");
+    }
+}
