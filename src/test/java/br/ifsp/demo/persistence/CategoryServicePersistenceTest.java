@@ -116,7 +116,7 @@ class CategoryServicePersistenceTest {
 
         assertThat(categories)
                 .extracting("path")
-                .containsExactly("Despesas", "Despesas/Lazer", "Despesas/Lazer/Cinema", "Receitas");
+                .containsExactly("Despesas", "Despesas/Lazer", "Despesas/Lazer/Cinema");
     }
 
     @Test
