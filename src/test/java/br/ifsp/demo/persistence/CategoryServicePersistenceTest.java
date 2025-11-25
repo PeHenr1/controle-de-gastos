@@ -117,4 +117,21 @@ class CategoryServicePersistenceTest {
                 .extracting("path")
                 .containsExactly("Despesas", "Despesas/Lazer", "Despesas/Lazer/Cinema", "Receitas");
     }
+
+    @Test
+    @DisplayName("Should Rename Child And Cascade Update Paths")
+    void shouldRenameChildAndCascadeUpdatePaths() {
+        String oldChildPath = "Despesas/Lazer";
+        String novoNome = "Entretenimento";
+        String newChildPath = "Despesas/Entretenimento";
+
+        repository.rename(childId, userId, novoNome, newChildPath);
+        repository.updatePathPrefix(userId, oldChildPath + "/", newChildPath + "/");
+
+        String pathChild = repository.findPathById(childId, userId);
+        assertThat(pathChild).isEqualTo(newChildPath);
+
+        String pathGrandChild = repository.findPathById(grandChildId, userId);
+        assertThat(pathGrandChild).isEqualTo("Despesas/Entretenimento/Cinema");
+    }
 }
