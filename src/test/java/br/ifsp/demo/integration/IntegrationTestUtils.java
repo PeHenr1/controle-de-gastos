@@ -1,0 +1,31 @@
+package br.ifsp.demo.integration;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import pitest.fasterxml.jackson.core.JsonProcessingException;
+import pitest.fasterxml.jackson.databind.ObjectMapper;
+
+public class IntegrationTestUtils {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final String VALID_USER_ID = "test@user.com";
+    public static final String INVALID_USER_ID = "";
+
+    public static String asJsonString(final Object obj) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Falha ao converter objeto para JSON", e);
+        }
+    }
+
+    public static HttpHeaders createHeaders(String userId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-User", userId);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return headers;
+    }
+
+    public static HttpHeaders createValidHeaders() {
+        return createHeaders(VALID_USER_ID);
+    }
+}
