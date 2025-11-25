@@ -97,4 +97,14 @@ class CategoryServicePersistenceTest {
 
         assertThat(exists).isTrue();
     }
+
+    @Test
+    @DisplayName("Should Return True For Children When Children Exists")
+    void shouldReturnTrueForChildrenWhenChildrenExist() {
+        boolean hasChildren = repository.hasChildren(rootId, userId);
+        assertThat(hasChildren).isTrue();
+
+        boolean leafHasChildren = repository.hasChildren(grandChildId, userId);
+        assertThat(leafHasChildren).isFalse();
+    }
 }
