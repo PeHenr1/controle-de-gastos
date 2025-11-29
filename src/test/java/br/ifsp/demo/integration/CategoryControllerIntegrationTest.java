@@ -113,4 +113,19 @@ class CategoryControllerUnitTest {
         verify(categoryRepositoryPort).findNodeById(eq(CATEGORY_ID), eq(VALID_USER_ID));
     }
 
+
+    // --- Testes para DELETE /api/v1/categories/{id} (delete) ---
+    @Test
+    @DisplayName("Should Return 204 When Successful With No Content")
+    void shouldReturn204WhenSuccessfulWithNoContent() throws Exception {
+        doNothing().when(categoryService).delete(eq(CATEGORY_ID), eq(VALID_USER_ID));
+
+        mockMvc.perform(delete(BASE_URL + "/" + CATEGORY_ID)
+                        .headers(IntegrationTestUtils.createValidHeaders()))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(categoryService).delete(eq(CATEGORY_ID), eq(VALID_USER_ID));
+    }
+
 }
