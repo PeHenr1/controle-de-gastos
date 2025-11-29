@@ -18,6 +18,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -36,7 +39,6 @@ class CategoryControllerUnitTest {
 
     private static final String ROOT_PATH = "Root Category";
     private static final String CHILD_PATH = "Parent Category/Child Category";
-
 
     private MockMvc mockMvc;
 
@@ -128,4 +130,26 @@ class CategoryControllerUnitTest {
         verify(categoryService).delete(eq(CATEGORY_ID), eq(VALID_USER_ID));
     }
 
+    // --- Testes para GET /api/v1/categories (list) ---
+    @Test
+    @DisplayName("Should Return 200 And List Of Category Nodes")
+    void shouldReturn200AndListOfCategoryNodes() throws Exception {
+        var node1 = createMockCategoryNode("ID1", VALID_USER_ID, "Node 1", null, "Node 1");
+        var node2 = createMockCategoryNode("ID2", VALID_USER_ID, "Node 2", null, "Node 2");
+
+        List<CategoryNode> mockList = Arrays.asList(node1, node2);
+
+        when(categoryService.listOrdered(eq(VALID_USER_ID))).thenReturn(mockList);
+
+        mockMvc.perform(get(BASE_URL)
+                        .headers(IntegrationTestUtils.createValidHeaders()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value("ID1"))
+                .andExpect(jsonPath("$[1].name").value("Node 2"));
+
+        verify(categoryService).listOrdered(eq(VALID_USER_ID));
+    }
 }
