@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -149,6 +150,21 @@ class CategoryControllerUnitTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value("ID1"))
                 .andExpect(jsonPath("$[1].name").value("Node 2"));
+
+        verify(categoryService).listOrdered(eq(VALID_USER_ID));
+    }
+
+    @Test
+    @DisplayName("Should Return 200 And Empty List When No Categories Exist")
+    void shouldReturn200AndEmptyListWhenNoCategoriesExist() throws Exception {
+        when(categoryService.listOrdered(eq(VALID_USER_ID))).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get(BASE_URL)
+                        .headers(IntegrationTestUtils.createValidHeaders()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
 
         verify(categoryService).listOrdered(eq(VALID_USER_ID));
     }
