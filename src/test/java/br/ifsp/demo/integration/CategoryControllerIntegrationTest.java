@@ -32,8 +32,11 @@ class CategoryControllerUnitTest {
     private static final String BASE_URL = "/api/v1/categories";
     private static final String VALID_USER_ID = IntegrationTestUtils.VALID_USER_ID;
     private static final String CATEGORY_ID = "CAT-123";
+    private static final String PARENT_ID = "PARENT-456";
 
     private static final String ROOT_PATH = "Root Category";
+    private static final String CHILD_PATH = "Parent Category/Child Category";
+
 
     private MockMvc mockMvc;
 
@@ -82,4 +85,32 @@ class CategoryControllerUnitTest {
         verify(categoryService).create(any(Category.class));
         verify(categoryRepositoryPort).findNodeById(eq(CATEGORY_ID), eq(VALID_USER_ID));
     }
+
+    // --- Testes para POST /api/v1/categories/{parentId}/children (createChild) ---
+    @Test
+    @DisplayName("Should Return 204 When Valid Payload Rename - Children")
+    void shouldReturn204AndCategoryNodeWhenValidPayloadChildren() throws Exception {
+        var requestName = "Child Category";
+        var request = new ValidCreateRequest(requestName);
+
+        var savedCategory = Category.child(VALID_USER_ID, requestName, PARENT_ID).withId(CATEGORY_ID);
+        var categoryNode = createMockCategoryNode(CATEGORY_ID, VALID_USER_ID, requestName, PARENT_ID, CHILD_PATH);
+
+        when(categoryService.create(any(Category.class))).thenReturn(savedCategory);
+        when(categoryRepositoryPort.findNodeById(eq(CATEGORY_ID), eq(VALID_USER_ID))).thenReturn(categoryNode);
+
+        mockMvc.perform(post(BASE_URL + "/" + PARENT_ID + "/children")
+                        .headers(IntegrationTestUtils.createValidHeaders())
+                        .content(IntegrationTestUtils.asJsonString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.id").value(CATEGORY_ID))
+                .andExpect(jsonPath("$.name").value(requestName))
+                .andExpect(jsonPath("$.parentId").value(PARENT_ID))
+                .andExpect(jsonPath("$.path").value(CHILD_PATH));
+
+        verify(categoryService).create(any(Category.class));
+        verify(categoryRepositoryPort).findNodeById(eq(CATEGORY_ID), eq(VALID_USER_ID));
+    }
+
 }
