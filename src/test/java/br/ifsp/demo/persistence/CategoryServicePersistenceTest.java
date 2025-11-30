@@ -1,7 +1,7 @@
 package br.ifsp.demo.persistence;
 
-import br.ifsp.demo.domain.model.Category;
-import br.ifsp.demo.domain.port.CategoryRepositoryPort;
+import br.ifsp.demo.infra.persistence.entity.CategoryEntity;
+import br.ifsp.demo.infra.persistence.repo.CategoryJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -21,136 +21,130 @@ import static org.assertj.core.api.Assertions.*;
 class CategoryServicePersistenceTest {
 
     @Autowired
-    private CategoryRepositoryPort repository;
+    private CategoryJpaRepository jpa;
 
     private String userId;
-
     private String rootId;
     private String childId;
     private String grandChildId;
-    private String newRootId;
-    private String nonExistentId;
+    private String nonExistentId = "fake";
 
     @BeforeEach
     void setup() {
         userId = UUID.randomUUID().toString();
 
-        Category rootCat = Category.root(userId, "Despesas");
-        rootId = repository.save(rootCat).id();
+        var root = new CategoryEntity(null, userId, "Despesas", null, "Despesas");
+        rootId = jpa.save(root).getId();
 
-        Category childCat = Category.child(userId, "Lazer", rootId);
-        childId = repository.save(childCat).id();
+        var child = new CategoryEntity(null, userId, "Lazer", rootId, "Despesas/Lazer");
+        childId = jpa.save(child).getId();
 
-        Category grandChildCat = Category.child(userId, "Cinema", childId);
-        grandChildId = repository.save(grandChildCat).id();
-
-        String rootPath = repository.findPathById(rootId, userId);
-        String childNewPath = rootPath + "/" + childCat.name();
-        repository.rename(childId, userId, childCat.name(), childNewPath);
-
-        String childPath = repository.findPathById(childId, userId);
-        String grandChildNewPath = childPath + "/" + grandChildCat.name();
-        repository.rename(grandChildId, userId, grandChildCat.name(), grandChildNewPath);
+        var grand = new CategoryEntity(null, userId, "Cinema", childId, "Despesas/Lazer/Cinema");
+        grandChildId = jpa.save(grand).getId();
     }
 
     @Test
     @DisplayName("Should Rename Root And Cascade Update Paths")
     void shouldRenameRootAndCascadeUpdatePaths() {
-        String prefixoAntigo = "Despesas";
-        String novoNome = "Gastos";
-        String prefixoNovo = "Gastos";
 
-        repository.rename(rootId, userId, novoNome, prefixoNovo);
-        repository.updatePathPrefix(userId, prefixoAntigo + "/", prefixoNovo + "/");
+        jpa.rename(rootId, userId, "Gastos", "Gastos");
+        jpa.updatePathPrefix(userId, "Despesas/", "Gastos/");
 
-        String pathRoot = repository.findPathById(rootId, userId);
-        assertThat(pathRoot).isEqualTo(prefixoNovo);
+        String pathRoot = jpa.findPath(rootId, userId);
+        assertThat(pathRoot).isEqualTo("Gastos");
 
-        String pathChild = repository.findPathById(childId, userId);
+        String pathChild = jpa.findPath(childId, userId);
         assertThat(pathChild).isEqualTo("Gastos/Lazer");
 
-        String pathGrandChild = repository.findPathById(grandChildId, userId);
+        String pathGrandChild = jpa.findPath(grandChildId, userId);
         assertThat(pathGrandChild).isEqualTo("Gastos/Lazer/Cinema");
     }
 
     @Test
     @DisplayName("Should Move Subtree And Cascade Update Paths")
     void shouldMoveSubtreeAndCascadeUpdatePaths() {
+
+        var newRoot = new CategoryEntity(null, userId, "Receitas", null, "Receitas");
+        String newRootId = jpa.save(newRoot).getId();
+
         String oldPath = "Despesas/Lazer";
         String newPath = "Receitas/Lazer";
 
-        repository.move(childId, userId, newRootId, newPath);
-        repository.updatePathPrefix(userId, oldPath + "/", newPath + "/");
+        jpa.move(childId, userId, newRootId, newPath);
+        jpa.updatePathPrefix(userId, oldPath + "/", newPath + "/");
 
-        String pathChild = repository.findPathById(childId, userId);
+        String pathChild = jpa.findPath(childId, userId);
         assertThat(pathChild).isEqualTo(newPath);
 
-        String pathGrandChild = repository.findPathById(grandChildId, userId);
+        String pathGrandChild = jpa.findPath(grandChildId, userId);
         assertThat(pathGrandChild).isEqualTo("Receitas/Lazer/Cinema");
     }
 
     @Test
-    @DisplayName("Should Return True For Exists By User And Path When Path Exists")
-    void shouldReturnTrueForExistsByUserAndPathWhenPathExists() {
-        String existingPath = "Despesas/Lazer";
+    @DisplayName("Should Return True For Exists By User And Path")
+    void shouldReturnTrueForExistsByUserAndPath() {
 
-        boolean exists = repository.existsByUserAndPath(userId, existingPath);
-
+        boolean exists = jpa.existsByUserAndPath(userId, "Despesas/Lazer");
         assertThat(exists).isTrue();
     }
 
     @Test
-    @DisplayName("Should Return True For Children When Children Exists")
-    void shouldReturnTrueForChildrenWhenChildrenExist() {
-        boolean hasChildren = repository.hasChildren(rootId, userId);
-        assertThat(hasChildren).isTrue();
+    @DisplayName("Should Return True For Children When They Exist")
+    void shouldReturnTrueForChildren() {
 
-        boolean leafHasChildren = repository.hasChildren(grandChildId, userId);
-        assertThat(leafHasChildren).isFalse();
+        assertThat(jpa.hasChildren(rootId, userId)).isTrue();
+        assertThat(jpa.hasChildren(grandChildId, userId)).isFalse();
     }
 
     @Test
     @DisplayName("Should List All Categories Ordered By Path")
     void shouldListAllCategoriesOrderedByPath() {
-        var categories = repository.findAllByUserOrdered(userId);
+
+        var categories = jpa.findAllOrdered(userId);
 
         assertThat(categories)
-                .extracting("path")
-                .containsExactly("Despesas", "Despesas/Lazer", "Despesas/Lazer/Cinema");
+                .extracting(CategoryEntity::getPath)
+                .containsExactly(
+                        "Despesas",
+                        "Despesas/Lazer",
+                        "Despesas/Lazer/Cinema"
+                );
     }
 
     @Test
     @DisplayName("Should Rename Child And Cascade Update Paths")
     void shouldRenameChildAndCascadeUpdatePaths() {
-        String oldChildPath = "Despesas/Lazer";
-        String novoNome = "Entretenimento";
-        String newChildPath = "Despesas/Entretenimento";
 
-        repository.rename(childId, userId, novoNome, newChildPath);
-        repository.updatePathPrefix(userId, oldChildPath + "/", newChildPath + "/");
+        String oldPath = "Despesas/Lazer";
+        String newPath = "Despesas/Entretenimento";
 
-        String pathChild = repository.findPathById(childId, userId);
-        assertThat(pathChild).isEqualTo(newChildPath);
+        jpa.rename(childId, userId, "Entretenimento", newPath);
+        jpa.updatePathPrefix(userId, oldPath + "/", newPath + "/");
 
-        String pathGrandChild = repository.findPathById(grandChildId, userId);
-        assertThat(pathGrandChild).isEqualTo("Despesas/Entretenimento/Cinema");
+        assertThat(jpa.findPath(childId, userId)).isEqualTo(newPath);
+        assertThat(jpa.findPath(grandChildId, userId))
+                .isEqualTo("Despesas/Entretenimento/Cinema");
     }
 
     @Test
     @DisplayName("Should Check Unique Name Per Parent")
     void shouldCheckUniqueNamePerParent() {
-        boolean existsWithDifferentCase = repository.existsByUserAndParentAndNameNormalized(userId, rootId, "lazer");
-        assertThat(existsWithDifferentCase).isTrue();
 
-        boolean existsUnderDifferentParent = repository.existsByUserAndParentAndNameNormalized(userId, newRootId, "lazer");
+        boolean existsSibling =
+                jpa.existsSiblingByNormalized(userId, rootId, "lazer");
+
+        assertThat(existsSibling).isTrue();
+
+        boolean existsUnderDifferentParent =
+                jpa.existsSiblingByNormalized(userId, null, "lazer");
+
         assertThat(existsUnderDifferentParent).isFalse();
     }
 
     @Test
-    @DisplayName("Should Return Null When Finding Path For Non Existent Id")
-    void shouldReturnNullWhenFindingPathForNonExistentId() {
-        String path = repository.findPathById(nonExistentId, userId);
+    @DisplayName("Should Return Null For Nonexistent Id")
+    void shouldReturnNullForNonexistentId() {
 
-        assertThat(path).isNull();
+        assertThat(jpa.findPath(nonExistentId, userId)).isNull();
     }
 }
