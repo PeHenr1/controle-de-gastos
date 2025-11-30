@@ -168,5 +168,32 @@ class ExpenseControllerTest {
         verify(expenseService, times(1)).create(any());
     }
 
+    @Test
+    @DisplayName("Should Reject If Category Does Not Exist")
+    void shouldRejectIfCategoryDoesNotExist() {
+
+        var req = new ExpenseController.CreateExpenseRequest(
+                BigDecimal.valueOf(40),
+                ExpenseType.DEBIT,
+                "Lanche",
+                Instant.now(),
+                "invalid-cat"
+        );
+
+        when(expenseService.create(any()))
+                .thenThrow(new IllegalArgumentException("Categoria não encontrada"));
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("Authorization", "Bearer " + authToken)
+                .header("X-User", TEST_EMAIL)
+                .body(req)
+                .when()
+                .post(BASE_URL)
+                .then()
+                .statusCode(400);
+
+        verify(expenseService, times(1)).create(any());
+    }
 
 }
