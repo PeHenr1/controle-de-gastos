@@ -1,5 +1,6 @@
 package br.ifsp.demo.integration;
 
+import br.ifsp.demo.domain.model.ExpenseType;
 import br.ifsp.demo.infra.persistence.entity.CategoryEntity;
 import br.ifsp.demo.infra.persistence.entity.ExpenseEntity;
 import br.ifsp.demo.security.auth.AuthRequest;
@@ -14,6 +15,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.math.BigDecimal;
+import java.time.Instant;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -100,4 +104,46 @@ class ReportControllerIntegrationTest {
                 .body("balance", is(0))
                 .body("items.size()", is(0));
     }
+
+    @Test
+    @DisplayName("Should Return Report With Expenses")
+    void shouldReturnReportWithExpenses() {
+        categoryJpa.save(new CategoryEntity("r1", USER, "Compras", null, "/Compras"));
+
+        expenseJpa.save(new ExpenseEntity(
+                null,
+                USER,
+                new BigDecimal("150"),
+                ExpenseType.DEBIT,
+                "Almoço",
+                Instant.parse("2025-12-05T12:00:00Z"),
+                "r1"
+        ));
+
+        expenseJpa.save(new ExpenseEntity(
+                null,
+                USER,
+                new BigDecimal("50"),
+                ExpenseType.CREDIT,
+                "Devolução",
+                Instant.parse("2025-12-06T12:00:00Z"),
+                "r1"
+        ));
+
+        given()
+                .header("Authorization", "Bearer " + authToken)
+                .header("X-User", USER)
+                .queryParam("start", "2025-12-01T00:00:00Z")
+                .queryParam("end", "2025-12-31T23:59:59Z")
+                .when()
+                .get(BASE_URL + "/period")
+                .then()
+                .statusCode(200)
+                .body("totalDebit", is(150))
+                .body("totalCredit", is(50))
+                .body("balance", is(-100))
+                .body("items.size()", is(1))
+                .body("items[0].categoryPath", equalTo("/Compras"));
+    }
+
 }
