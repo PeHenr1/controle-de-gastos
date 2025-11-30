@@ -29,7 +29,7 @@ import static org.mockito.Mockito.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Tag("ApiTest")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ExpenseControllerTest {
+class ExpenseControllerIntegrationTest {
 
     @LocalServerPort
     private int port;
