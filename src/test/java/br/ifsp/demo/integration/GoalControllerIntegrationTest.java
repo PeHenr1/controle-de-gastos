@@ -1,6 +1,7 @@
 package br.ifsp.demo.integration;
 
 import br.ifsp.demo.controller.GoalController;
+import br.ifsp.demo.domain.model.ExpenseType;
 import br.ifsp.demo.infra.persistence.entity.CategoryEntity;
 import br.ifsp.demo.infra.persistence.entity.ExpenseEntity;
 import br.ifsp.demo.infra.persistence.entity.GoalEntity;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -187,5 +189,43 @@ class GoalControllerIntegrationTest {
         }
     }
 
+    @Nested
+    class EvaluateGoalTests {
 
+        @Test
+        @DisplayName("Should Evaluate Not Exceeded")
+        void shouldEvaluateNotExceeded() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            goalJpa.save(new GoalEntity(
+                    null, USER, "r1", "2025-12", new BigDecimal("500")
+            ));
+
+            expenseJpa.save(new ExpenseEntity(
+                    null,
+                    USER,
+                    new BigDecimal("100"),
+                    ExpenseType.DEBIT,
+                    "Almoço",
+                    Instant.parse("2025-12-05T00:00:00Z"),
+                    "r1"
+            ));
+
+            given()
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .queryParam("rootCategoryId", "r1")
+                    .queryParam("month", "2025-12")
+                    .when()
+                    .get(BASE_URL + "/evaluate")
+                    .then()
+                    .statusCode(200)
+                    .body("exceeded", is(false))
+                    .body("spent", is(100))
+                    .body("diff", is(0));
+        }
+    }
 }
