@@ -143,4 +143,30 @@ class ExpenseControllerTest {
         verify(expenseService, times(1)).create(any());
     }
 
+    @Test
+    @DisplayName("Should Reject Blank Description")
+    void shouldRejectBlankDescription() {
+
+        var req = new ExpenseController.CreateExpenseRequest(
+                BigDecimal.valueOf(20),
+                ExpenseType.CREDIT,
+                "    ",
+                Instant.now(),
+                null
+        );
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("Authorization", "Bearer " + authToken)
+                .header("X-User", TEST_EMAIL)
+                .body(req)
+                .when()
+                .post(BASE_URL)
+                .then()
+                .statusCode(400);
+
+        verify(expenseService, times(1)).create(any());
+    }
+
+
 }
