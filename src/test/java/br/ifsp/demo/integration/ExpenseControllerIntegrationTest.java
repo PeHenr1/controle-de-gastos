@@ -28,6 +28,7 @@ import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Tag("ApiTest")
+@Tag("IntegrationTest")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ExpenseControllerIntegrationTest {
 
