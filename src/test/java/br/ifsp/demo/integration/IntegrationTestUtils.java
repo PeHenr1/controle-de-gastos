@@ -1,10 +1,14 @@
 package br.ifsp.demo.integration;
 
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
 import pitest.fasterxml.jackson.core.JsonProcessingException;
 import pitest.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.mockito.Mockito.mock;
 public class IntegrationTestUtils {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     public static final String VALID_USER_ID = "test@user.com";
