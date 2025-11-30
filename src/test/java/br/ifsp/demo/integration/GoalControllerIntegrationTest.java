@@ -161,4 +161,25 @@ class GoalControllerIntegrationTest {
                 .statusCode(400);
     }
 
+    @Test
+    @DisplayName("Should Reject Non Positive Limit")
+    void shouldRejectNonPositiveLimit() {
+
+        var req = new GoalController.SetGoalRequest(
+                "root-1",
+                "2025-12",
+                BigDecimal.ZERO
+        );
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("Authorization", "Bearer " + authToken)
+                .header("X-User", USER)
+                .body(req)
+                .when()
+                .post(BASE_URL)
+                .then()
+                .statusCode(400);
+    }
+
 }
