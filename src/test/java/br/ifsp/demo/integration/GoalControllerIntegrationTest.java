@@ -263,5 +263,24 @@ class GoalControllerIntegrationTest {
                     .body("spent", is(450))
                     .body("diff", is(150));
         }
+
+        @Test
+        @DisplayName("Should Reject Invalid Month")
+        void shouldRejectInvalidMonth() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            given()
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .queryParam("rootCategoryId", "r1")
+                    .queryParam("month", "2025/12")
+                    .when()
+                    .get(BASE_URL + "/evaluate")
+                    .then()
+                    .statusCode(400);
+        }
     }
 }
