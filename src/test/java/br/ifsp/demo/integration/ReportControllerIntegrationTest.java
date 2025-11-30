@@ -146,4 +146,22 @@ class ReportControllerIntegrationTest {
                 .body("items[0].categoryPath", equalTo("/Compras"));
     }
 
+    @Test
+    @DisplayName("Should Reject Invalid Period")
+    void shouldRejectInvalidPeriod() {
+        String PASS = "12345678";
+        registerUser(USER, PASS);
+        String token = authenticate(USER, PASS);
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .header("X-User", USER)
+                .queryParam("start", "2025-12-31T00:00:00Z")
+                .queryParam("end", "2025-12-01T00:00:00Z")
+                .when()
+                .get(BASE_URL + "/period")
+                .then()
+                .statusCode(400);
+    }
+
 }
