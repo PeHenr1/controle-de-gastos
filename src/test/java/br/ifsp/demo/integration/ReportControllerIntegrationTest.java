@@ -206,4 +206,24 @@ class ReportControllerIntegrationTest {
                 .body("items[0].categoryPath", equalTo("/Compras/Feira"))
                 .body("items[1].categoryPath", equalTo("/Compras/Mercado"));
     }
+
+    @Test
+    @DisplayName("Should Reject Non Existing Root Category")
+    void shouldRejectNonExistingRootCategory() {
+        String user = USER;
+        String pass = "12345678";
+        registerUser(user, pass);
+        String token = authenticate(user, pass);
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .header("X-User", user)
+                .queryParam("start", "2025-12-01T00:00:00Z")
+                .queryParam("end", "2025-12-31T23:59:59Z")
+                .queryParam("rootCategoryId", "non-existent")
+                .when()
+                .get(BASE_URL + "/category-tree")
+                .then()
+                .statusCode(400);
+    }
 }
