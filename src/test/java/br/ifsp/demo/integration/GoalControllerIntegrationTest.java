@@ -110,4 +110,26 @@ class GoalControllerIntegrationTest {
                 .then()
                 .statusCode(400);
     }
+
+    @Test
+    @DisplayName("Should Reject Non-Existing Category")
+    void shouldRejectNonExistingCategory() {
+
+        var req = new GoalController.SetGoalRequest(
+                "cat-x",
+                "2025-12",
+                new BigDecimal("500")
+        );
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("Authorization", "Bearer " + authToken)
+                .header("X-User", USER)
+                .body(req)
+                .when()
+                .post(BASE_URL)
+                .then()
+                .statusCode(400);
+    }
+
 }
