@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 @Tag("ApiTest")
 @Tag("IntegrationTest")
-class CategoryControllerUnitTest {
+class CategoryControllerIntegrationTest {
 
     private static final String BASE_URL = "/api/v1/categories";
     private static final String VALID_USER_ID = IntegrationTestUtils.VALID_USER_ID;
