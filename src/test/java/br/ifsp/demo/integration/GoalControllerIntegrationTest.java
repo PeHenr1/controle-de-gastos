@@ -227,5 +227,41 @@ class GoalControllerIntegrationTest {
                     .body("spent", is(100))
                     .body("diff", is(0));
         }
+
+        @Test
+        @DisplayName("Should Evaluate Exceeded")
+        void shouldEvaluateExceeded() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            goalJpa.save(new GoalEntity(
+                    null, USER, "r1", "2025-12", new BigDecimal("300")
+            ));
+
+            expenseJpa.save(new ExpenseEntity(
+                    null,
+                    USER,
+                    new BigDecimal("450"),
+                    ExpenseType.DEBIT,
+                    "Mercado",
+                    Instant.parse("2025-12-03T00:00:00Z"),
+                    "r1"
+            ));
+
+            given()
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .queryParam("rootCategoryId", "r1")
+                    .queryParam("month", "2025-12")
+                    .when()
+                    .get(BASE_URL + "/evaluate")
+                    .then()
+                    .statusCode(200)
+                    .body("exceeded", is(true))
+                    .body("spent", is(450))
+                    .body("diff", is(150));
+        }
     }
 }
