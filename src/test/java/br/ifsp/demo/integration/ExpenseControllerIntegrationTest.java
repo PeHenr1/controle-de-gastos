@@ -196,4 +196,32 @@ class ExpenseControllerTest {
         verify(expenseService, times(1)).create(any());
     }
 
+    @Test
+    @DisplayName("Should Return 500 For Unexpected Exception")
+    void shouldReturn500ForUnexpectedException() {
+
+        var req = new ExpenseController.CreateExpenseRequest(
+                BigDecimal.valueOf(80),
+                ExpenseType.DEBIT,
+                "Frango",
+                Instant.now(),
+                null
+        );
+
+        when(expenseService.create(any()))
+                .thenThrow(new RuntimeException("Database down"));
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("Authorization", "Bearer " + authToken)
+                .header("X-User", TEST_EMAIL)
+                .body(req)
+                .when()
+                .post(BASE_URL)
+                .then()
+                .statusCode(500);
+
+        verify(expenseService, times(1)).create(any());
+    }
+
 }
