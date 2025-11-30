@@ -282,5 +282,24 @@ class GoalControllerIntegrationTest {
                     .then()
                     .statusCode(400);
         }
+
+        @Test
+        @DisplayName("Should Fail When Goal Does Not Exist")
+        void shouldFailWhenGoalDoesNotExist() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            given()
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .queryParam("rootCategoryId", "r1")
+                    .queryParam("month", "2025-12")
+                    .when()
+                    .get(BASE_URL + "/evaluate")
+                    .then()
+                    .statusCode(400);
+        }
     }
 }
