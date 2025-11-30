@@ -90,96 +90,102 @@ class GoalControllerIntegrationTest {
         return resp.token();
     }
 
-    @Test
-    @DisplayName("Should Reject Invalid Month Format")
-    void shouldRejectInvalidMonthFormat() {
 
-        var req = new GoalController.SetGoalRequest(
-                "root-1",
-                "2025/12",
-                new BigDecimal("500")
-        );
+    @Nested
+    class SetGoalTests {
 
-        given()
-                .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + authToken)
-                .header("X-User", USER)
-                .body(req)
-                .when()
-                .post(BASE_URL)
-                .then()
-                .statusCode(400);
+        @Test
+        @DisplayName("Should Reject Invalid Month Format")
+        void shouldRejectInvalidMonthFormat() {
+
+            var req = new GoalController.SetGoalRequest(
+                    "root-1",
+                    "2025/12",
+                    new BigDecimal("500")
+            );
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .body(req)
+                    .when()
+                    .post(BASE_URL)
+                    .then()
+                    .statusCode(400);
+        }
+
+        @Test
+        @DisplayName("Should Reject Non-Existing Category")
+        void shouldRejectNonExistingCategory() {
+
+            var req = new GoalController.SetGoalRequest(
+                    "cat-x",
+                    "2025-12",
+                    new BigDecimal("500")
+            );
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .body(req)
+                    .when()
+                    .post(BASE_URL)
+                    .then()
+                    .statusCode(400);
+        }
+
+        @Test
+        @DisplayName("Should Reject Category That Is Not Root")
+        void shouldRejectCategoryThatIsNotRoot() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            categoryJpa.save(new CategoryEntity(
+                    "c1", USER, "Mercado", "r1", "/Compras/Mercado"
+            ));
+
+            var req = new GoalController.SetGoalRequest(
+                    "c1",
+                    "2025-10",
+                    new BigDecimal("400")
+            );
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .body(req)
+                    .when()
+                    .post(BASE_URL)
+                    .then()
+                    .statusCode(400);
+        }
+
+        @Test
+        @DisplayName("Should Reject Non Positive Limit")
+        void shouldRejectNonPositiveLimit() {
+
+            var req = new GoalController.SetGoalRequest(
+                    "root-1",
+                    "2025-12",
+                    BigDecimal.ZERO
+            );
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .body(req)
+                    .when()
+                    .post(BASE_URL)
+                    .then()
+                    .statusCode(400);
+        }
     }
 
-    @Test
-    @DisplayName("Should Reject Non-Existing Category")
-    void shouldRejectNonExistingCategory() {
-
-        var req = new GoalController.SetGoalRequest(
-                "cat-x",
-                "2025-12",
-                new BigDecimal("500")
-        );
-
-        given()
-                .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + authToken)
-                .header("X-User", USER)
-                .body(req)
-                .when()
-                .post(BASE_URL)
-                .then()
-                .statusCode(400);
-    }
-
-    @Test
-    @DisplayName("Should Reject Category That Is Not Root")
-    void shouldRejectCategoryThatIsNotRoot() {
-
-        categoryJpa.save(new CategoryEntity(
-                "r1", USER, "Compras", null, "/Compras"
-        ));
-
-        categoryJpa.save(new CategoryEntity(
-                "c1", USER, "Mercado", "r1", "/Compras/Mercado"
-        ));
-
-        var req = new GoalController.SetGoalRequest(
-                "c1",
-                "2025-10",
-                new BigDecimal("400")
-        );
-
-        given()
-                .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + authToken)
-                .header("X-User", USER)
-                .body(req)
-                .when()
-                .post(BASE_URL)
-                .then()
-                .statusCode(400);
-    }
-
-    @Test
-    @DisplayName("Should Reject Non Positive Limit")
-    void shouldRejectNonPositiveLimit() {
-
-        var req = new GoalController.SetGoalRequest(
-                "root-1",
-                "2025-12",
-                BigDecimal.ZERO
-        );
-
-        given()
-                .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + authToken)
-                .header("X-User", USER)
-                .body(req)
-                .when()
-                .post(BASE_URL)
-                .then()
-                .statusCode(400);
-    }
 
 }
