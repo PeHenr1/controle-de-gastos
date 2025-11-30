@@ -28,4 +28,18 @@ public class IntegrationTestUtils {
     public static HttpHeaders createValidHeaders() {
         return createHeaders(VALID_USER_ID);
     }
+
+    @TestConfiguration
+    public static class TestSecurityConfig {
+
+        @Bean
+        public AuthenticationManager authenticationManager() {
+            return mock(AuthenticationManager.class);
+        }
+
+        @Bean
+        public br.ifsp.demo.security.config.JwtService jwtService() {
+            return mock(br.ifsp.demo.security.config.JwtService.class);
+        }
+    }
 }
