@@ -76,4 +76,29 @@ class GoalServicePersistenceTest {
         var result = repository.findMonthly(userId, categoryId, "2030-01");
         assertThat(result).isEmpty();
     }
+
+    @Test
+    @DisplayName("Should Allow Same Month But Different Category")
+    void shouldAllowSameMonthDifferentCategory() {
+        var goal1 = new GoalEntity(
+                null,
+                userId,
+                categoryId,
+                "2025-04",
+                new BigDecimal("100")
+        );
+
+        var goal2 = new GoalEntity(
+                null,
+                userId,
+                UUID.randomUUID().toString(),
+                "2025-04",
+                new BigDecimal("100")
+        );
+
+        repository.save(goal1);
+        repository.save(goal2);
+
+        assertThat(repository.findAll()).hasSize(2);
+    }
 }
