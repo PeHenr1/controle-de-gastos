@@ -101,4 +101,29 @@ class GoalServicePersistenceTest {
 
         assertThat(repository.findAll()).hasSize(2);
     }
+
+    @Test
+    @DisplayName("Should Allow Same Category For Different Months")
+    void shouldAllowSameCategoryDifferentMonths() {
+        var goal1 = new GoalEntity(
+                null,
+                userId,
+                categoryId,
+                "2025-05",
+                new BigDecimal("100")
+        );
+
+        var goal2 = new GoalEntity(
+                null,
+                userId,
+                categoryId,
+                "2025-06",
+                new BigDecimal("200")
+        );
+
+        repository.save(goal1);
+        repository.save(goal2);
+
+        assertThat(repository.findAll()).hasSize(2);
+    }
 }
