@@ -67,4 +67,23 @@ class ExpenseServicePersistenceTest {
 
         assertThat(result).hasSize(2);
     }
+
+    @Test
+    @DisplayName("Should Return True When Exists By User And Category")
+    void shouldReturnTrueWhenExistsByUserAndCategory() {
+        var categoryId = UUID.randomUUID().toString();
+
+        var e = new ExpenseEntity();
+        e.setUserId(userId);
+        e.setAmount(new BigDecimal("15"));
+        e.setType(ExpenseType.DEBIT);
+        e.setDescription("Teste");
+        e.setTimestamp(Instant.now());
+        e.setCategoryId(categoryId);
+
+        repository.save(e);
+
+        boolean exists = repository.existsByUserAndCategory(userId, categoryId);
+        assertThat(exists).isTrue();
+    }
 }
