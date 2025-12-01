@@ -69,4 +69,11 @@ class GoalServicePersistenceTest {
         assertThat(result).isPresent();
         assertThat(result.get().getLimitAmount()).isEqualByComparingTo("300");
     }
+
+    @Test
+    @DisplayName("Should Return Empty When Monthly Goal Not Found")
+    void shouldReturnEmptyWhenMonthlyNotFound() {
+        var result = repository.findMonthly(userId, categoryId, "2030-01");
+        assertThat(result).isEmpty();
+    }
 }
