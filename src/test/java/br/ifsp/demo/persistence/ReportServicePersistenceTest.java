@@ -157,4 +157,12 @@ class ReportServicePersistenceTest {
         assertThat(report.totalDebit()).isEqualByComparingTo("80.00");
         assertThat(report.items()).hasSize(1);
     }
+
+    @Test
+    @DisplayName("Should throw error when period is invalid")
+    void shouldThrowErrorWhenPeriodIsInvalid() {
+        assertThatThrownBy(() ->
+                service.generate(userId, end, start))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }
