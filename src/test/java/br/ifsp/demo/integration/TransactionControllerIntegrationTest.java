@@ -97,4 +97,15 @@ class TransactionControllerIntegrationTest {
                 .then()
                 .statusCode(401);
     }
+
+    @Test
+    @DisplayName("Should Return 401 When Token Is Invalid")
+    void shouldReturn401WhenTokenIsInvalid() {
+        given()
+                .header("Authorization", "Bearer invalid.token.value")
+                .when()
+                .get("/api/v1/hello")
+                .then()
+                .statusCode(401);
+    }
 }
