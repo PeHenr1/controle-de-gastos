@@ -165,4 +165,12 @@ class ReportServicePersistenceTest {
                 service.generate(userId, end, start))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    @DisplayName("Should throw error when category is invalid")
+    void shouldThrowErrorWhenCategoryIsInvalid() {
+        assertThatThrownBy(() ->
+                service.generateForCategoryTree(userId, start, end, "xxx"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }
