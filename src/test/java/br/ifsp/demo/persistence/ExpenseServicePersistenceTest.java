@@ -86,4 +86,11 @@ class ExpenseServicePersistenceTest {
         boolean exists = repository.existsByUserAndCategory(userId, categoryId);
         assertThat(exists).isTrue();
     }
+
+    @Test
+    @DisplayName("Should Return False When Category Does Not Match User")
+    void shouldReturnFalseWhenCategoryDoesNotMatchUser() {
+        boolean exists = repository.existsByUserAndCategory(userId, UUID.randomUUID().toString());
+        assertThat(exists).isFalse();
+    }
 }
