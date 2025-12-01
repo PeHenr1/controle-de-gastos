@@ -51,4 +51,22 @@ class GoalServicePersistenceTest {
         assertThat(found.get().getLimitAmount()).isEqualTo("500.00");
         assertThat(found.get().getMonth()).isEqualTo("2025-01");
     }
+
+    @Test
+    @DisplayName("Should Find Monthly Goal By User, Category And Month")
+    void shouldFindMonthlyGoal() {
+        var entity = new GoalEntity(
+                null,
+                userId,
+                categoryId,
+                "2025-02",
+                new BigDecimal("300")
+        );
+
+        repository.save(entity);
+        var result = repository.findMonthly(userId, categoryId, "2025-02");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getLimitAmount()).isEqualByComparingTo("300");
+    }
 }
