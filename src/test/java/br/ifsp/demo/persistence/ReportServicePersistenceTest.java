@@ -128,4 +128,33 @@ class ReportServicePersistenceTest {
                 .extracting(ReportItem::categoryPath)
                 .containsExactly("Despesas", "Despesas/Lazer");
     }
+
+    @Test
+    @DisplayName(value = "Should ignore expenses with category not found")
+    void shouldIgnoreExpensesWithCategoryNotFound() {
+
+        CategoryEntity temp = catRepo.save(new CategoryEntity(
+                null, userId, "Temp", null, "Temp"
+        ));
+
+        expenseRepo.save(new ExpenseEntity(
+                null, userId, new BigDecimal("80.00"),
+                ExpenseType.DEBIT, "Compra",
+                Instant.parse("2025-01-05T10:00:00Z"), catRoot.getId()
+        ));
+
+        String deletedId = temp.getId();
+        catRepo.delete(temp);
+
+        expenseRepo.save(new ExpenseEntity(
+                null, userId, new BigDecimal("90.00"),
+                ExpenseType.DEBIT, "Inválida",
+                Instant.parse("2025-01-07T15:00:00Z"), deletedId
+        ));
+
+        Report report = service.generate(userId, start, end);
+
+        assertThat(report.totalDebit()).isEqualByComparingTo("80.00");
+        assertThat(report.items()).hasSize(1);
+    }
 }
