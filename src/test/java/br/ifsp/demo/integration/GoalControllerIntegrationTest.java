@@ -1,0 +1,306 @@
+package br.ifsp.demo.integration;
+
+import br.ifsp.demo.controller.GoalController;
+import br.ifsp.demo.domain.model.ExpenseType;
+import br.ifsp.demo.infra.persistence.entity.CategoryEntity;
+import br.ifsp.demo.infra.persistence.entity.ExpenseEntity;
+import br.ifsp.demo.infra.persistence.entity.GoalEntity;
+import br.ifsp.demo.security.auth.AuthRequest;
+import br.ifsp.demo.security.auth.AuthResponse;
+import br.ifsp.demo.security.auth.RegisterUserRequest;
+
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+
+import org.junit.jupiter.api.*;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Tag("ApiTest")
+@Tag("IntegrationTest")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class GoalControllerIntegrationTest {
+
+    @LocalServerPort
+    private int port;
+
+    private String authToken;
+
+    private final String USER = "goal@test.com";
+    private final String BASE_URL = "/api/v1/goals";
+
+    @Autowired
+    private JpaRepository<CategoryEntity, String> categoryJpa;
+
+    @Autowired
+    private JpaRepository<GoalEntity, String> goalJpa;
+
+    @Autowired
+    private JpaRepository<ExpenseEntity, String> expenseJpa;
+
+    @BeforeAll
+    void setup() {
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = port;
+
+        String PASS = "12345678";
+
+        registerUser(USER, PASS);
+        this.authToken = authenticate(USER, PASS);
+    }
+
+    @AfterEach
+    void cleanup() {
+        expenseJpa.deleteAll();
+        goalJpa.deleteAll();
+        categoryJpa.deleteAll();
+    }
+
+    private void registerUser(String email, String pass) {
+        RegisterUserRequest req = new RegisterUserRequest("Test", "Goal", email, pass);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(req)
+                .when()
+                .post("/api/v1/register")
+                .then()
+                .statusCode(isOneOf(201, 409));
+    }
+
+    private String authenticate(String email, String pass) {
+        AuthRequest req = new AuthRequest(email, pass);
+
+        AuthResponse resp = given()
+                .contentType(ContentType.JSON)
+                .body(req)
+                .when()
+                .post("/api/v1/authenticate")
+                .then()
+                .statusCode(200)
+                .extract()
+                .as(AuthResponse.class);
+
+        return resp.token();
+    }
+
+
+    @Nested
+    class SetGoalTests {
+
+        @Test
+        @DisplayName("Should Reject Invalid Month Format")
+        void shouldRejectInvalidMonthFormat() {
+
+            var req = new GoalController.SetGoalRequest(
+                    "root-1",
+                    "2025/12",
+                    new BigDecimal("500")
+            );
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .body(req)
+                    .when()
+                    .post(BASE_URL)
+                    .then()
+                    .statusCode(400);
+        }
+
+        @Test
+        @DisplayName("Should Reject Non-Existing Category")
+        void shouldRejectNonExistingCategory() {
+
+            var req = new GoalController.SetGoalRequest(
+                    "cat-x",
+                    "2025-12",
+                    new BigDecimal("500")
+            );
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .body(req)
+                    .when()
+                    .post(BASE_URL)
+                    .then()
+                    .statusCode(400);
+        }
+
+        @Test
+        @DisplayName("Should Reject Category That Is Not Root")
+        void shouldRejectCategoryThatIsNotRoot() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            categoryJpa.save(new CategoryEntity(
+                    "c1", USER, "Mercado", "r1", "/Compras/Mercado"
+            ));
+
+            var req = new GoalController.SetGoalRequest(
+                    "c1",
+                    "2025-10",
+                    new BigDecimal("400")
+            );
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .body(req)
+                    .when()
+                    .post(BASE_URL)
+                    .then()
+                    .statusCode(400);
+        }
+
+        @Test
+        @DisplayName("Should Reject Non Positive Limit")
+        void shouldRejectNonPositiveLimit() {
+
+            var req = new GoalController.SetGoalRequest(
+                    "root-1",
+                    "2025-12",
+                    BigDecimal.ZERO
+            );
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .body(req)
+                    .when()
+                    .post(BASE_URL)
+                    .then()
+                    .statusCode(400);
+        }
+    }
+
+    @Nested
+    class EvaluateGoalTests {
+
+        @Test
+        @DisplayName("Should Evaluate Not Exceeded")
+        void shouldEvaluateNotExceeded() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            goalJpa.save(new GoalEntity(
+                    null, USER, "r1", "2025-12", new BigDecimal("500")
+            ));
+
+            expenseJpa.save(new ExpenseEntity(
+                    null,
+                    USER,
+                    new BigDecimal("100"),
+                    ExpenseType.DEBIT,
+                    "Almoço",
+                    Instant.parse("2025-12-05T00:00:00Z"),
+                    "r1"
+            ));
+
+            given()
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .queryParam("rootCategoryId", "r1")
+                    .queryParam("month", "2025-12")
+                    .when()
+                    .get(BASE_URL + "/evaluate")
+                    .then()
+                    .statusCode(200)
+                    .body("exceeded", is(false))
+                    .body("spent", is(100))
+                    .body("diff", is(0));
+        }
+
+        @Test
+        @DisplayName("Should Evaluate Exceeded")
+        void shouldEvaluateExceeded() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            goalJpa.save(new GoalEntity(
+                    null, USER, "r1", "2025-12", new BigDecimal("300")
+            ));
+
+            expenseJpa.save(new ExpenseEntity(
+                    null,
+                    USER,
+                    new BigDecimal("450"),
+                    ExpenseType.DEBIT,
+                    "Mercado",
+                    Instant.parse("2025-12-03T00:00:00Z"),
+                    "r1"
+            ));
+
+            given()
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .queryParam("rootCategoryId", "r1")
+                    .queryParam("month", "2025-12")
+                    .when()
+                    .get(BASE_URL + "/evaluate")
+                    .then()
+                    .statusCode(200)
+                    .body("exceeded", is(true))
+                    .body("spent", is(450))
+                    .body("diff", is(150));
+        }
+
+        @Test
+        @DisplayName("Should Reject Invalid Month")
+        void shouldRejectInvalidMonth() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            given()
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .queryParam("rootCategoryId", "r1")
+                    .queryParam("month", "2025/12")
+                    .when()
+                    .get(BASE_URL + "/evaluate")
+                    .then()
+                    .statusCode(400);
+        }
+
+        @Test
+        @DisplayName("Should Fail When Goal Does Not Exist")
+        void shouldFailWhenGoalDoesNotExist() {
+
+            categoryJpa.save(new CategoryEntity(
+                    "r1", USER, "Compras", null, "/Compras"
+            ));
+
+            given()
+                    .header("Authorization", "Bearer " + authToken)
+                    .header("X-User", USER)
+                    .queryParam("rootCategoryId", "r1")
+                    .queryParam("month", "2025-12")
+                    .when()
+                    .get(BASE_URL + "/evaluate")
+                    .then()
+                    .statusCode(400);
+        }
+    }
+}
