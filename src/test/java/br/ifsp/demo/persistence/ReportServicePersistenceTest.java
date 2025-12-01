@@ -58,7 +58,7 @@ class ReportServicePersistenceTest {
 
     @Test
     @DisplayName("Should generate report for all categories")
-    void ShouldGenerateReportForAllCategoriesIncluding() {
+    void shouldGenerateReportForAllCategoriesIncluding() {
 
         expenseRepo.save(new ExpenseEntity(
                 null, userId, new BigDecimal("100.00"),
@@ -91,5 +91,41 @@ class ReportServicePersistenceTest {
                         "Despesas/Lazer",
                         "Sem categoria"
                 );
+    }
+
+    @Test
+    @DisplayName("Should generate report only for category tree")
+    void shouldGenerateReportOnlyForCategoryTree() {
+
+        expenseRepo.save(new ExpenseEntity(
+                null, userId, new BigDecimal("40.00"),
+                ExpenseType.DEBIT, "Restaurante",
+                Instant.parse("2025-01-05T10:00:00Z"), catRoot.getId()
+        ));
+
+        expenseRepo.save(new ExpenseEntity(
+                null, userId, new BigDecimal("60.00"),
+                ExpenseType.DEBIT, "Cinema",
+                Instant.parse("2025-01-06T10:00:00Z"), catChild.getId()
+        ));
+
+        CategoryEntity other = catRepo.save(new CategoryEntity(
+                null, userId, "Receitas", null, "Receitas"
+        ));
+
+        expenseRepo.save(new ExpenseEntity(
+                null, userId, new BigDecimal("500.00"),
+                ExpenseType.CREDIT, "Salário",
+                Instant.parse("2025-01-05T12:00:00Z"), other.getId()
+        ));
+
+        Report report = service.generateForCategoryTree(userId, start, end, catRoot.getId());
+
+        assertThat(report.totalDebit()).isEqualByComparingTo("100.00");
+        assertThat(report.totalCredit()).isZero();
+
+        assertThat(report.items())
+                .extracting(ReportItem::categoryPath)
+                .containsExactly("Despesas", "Despesas/Lazer");
     }
 }
