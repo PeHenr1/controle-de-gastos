@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -48,5 +49,22 @@ class ExpenseServicePersistenceTest {
         var found = repository.findById(saved.getId());
         assertThat(found).isPresent();
         assertThat(found.get().getDescription()).isEqualTo("Cinema");
+    }
+
+    @Test
+    @DisplayName("Should Find Expenses By Period")
+    void shouldFindByPeriod() {
+        Instant now = Instant.now();
+
+        var e1 = new ExpenseEntity(null, userId, new BigDecimal("10"), ExpenseType.DEBIT,
+                "A1", now.minusSeconds(100), null);
+        var e2 = new ExpenseEntity(null, userId, new BigDecimal("20"), ExpenseType.DEBIT,
+                "A2", now.minusSeconds(50), null);
+
+        repository.saveAll(List.of(e1, e2));
+
+        var result = repository.findByUserAndPeriod(userId, now.minusSeconds(120), now);
+
+        assertThat(result).hasSize(2);
     }
 }
