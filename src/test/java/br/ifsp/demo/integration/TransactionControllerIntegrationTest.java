@@ -87,4 +87,14 @@ class TransactionControllerIntegrationTest {
                 .statusCode(200)
                 .body(equalTo("Hello: " + expectedUserId));
     }
+
+    @Test
+    @DisplayName("Should Return 401 When Authorization Header Is Missing")
+    void shouldReturn401WhenAuthorizationHeaderIsMissing() {
+        given()
+                .when()
+                .get("/api/v1/hello")
+                .then()
+                .statusCode(401);
+    }
 }
